@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -28,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
     TextView tvTimer1;
     int t1Hour,t1Minute;
     TimePickerDialog timePickerDialog;
-
+    Button stop_alarm_button;
+    Ringtone r;
+    boolean isStopped;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +39,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //  Ringtone
-        final Ringtone r = RingtoneManager.getRingtone(getApplicationContext(),RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+        r = RingtoneManager.getRingtone(getApplicationContext(),RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
 
         CreateTimePickerDialog();
-        AlarmTimer(r);
+        AlarmTimer();
 
     }
 
@@ -48,13 +51,14 @@ public class MainActivity extends AppCompatActivity {
     {
         //Assigning variables
         tvTimer1 = findViewById(R.id.set_timer2);
-
+        stop_alarm_button = findViewById((R.id.stopButton));
         tvTimer1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //Initialize time picker dialog
                 timePickerDialog = new TimePickerDialog(
                         MainActivity.this,
+                        2,
                         new TimePickerDialog.OnTimeSetListener() {
                             @Override
                             public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
@@ -78,24 +82,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
-
     //  Checks whether time has come for alarm
-    public void AlarmTimer(Ringtone r)
+    public void AlarmTimer()
     {
         Timer t = new Timer();
         t.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if(ReturnCurrentTime().equals(AlarmTime()))
+                if(ReturnCurrentTime().equals(AlarmTime()) && !isStopped)
                 {
                     r.play();
-                    Log.d("TIMERIF",AlarmTime() + " " + ReturnCurrentTime());
                 }
                 else
                 {
                     r.stop();
-                    Log.d("TIMERELSE",AlarmTime() + " " + ReturnCurrentTime());
                 }
             }
         },0,1000);  //  Will check it every second
@@ -112,5 +112,12 @@ public class MainActivity extends AppCompatActivity {
     {
         String current_time = DateFormat.format("hh:mm aa",Calendar.getInstance().getTime()).toString();
         return  current_time;
+    }
+
+    //  OnClickListener for out button
+    public void StopButton(View view)
+    {
+        r.stop();
+        isStopped = true;
     }
 }
