@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Assigning variables
+//        //Assigning variables
         tvTimer1 = findViewById(R.id.set_timer2);
 
         tvTimer1.setOnClickListener(new View.OnClickListener() {
