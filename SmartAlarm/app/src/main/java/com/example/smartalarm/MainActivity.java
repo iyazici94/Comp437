@@ -3,6 +3,7 @@ package com.example.smartalarm;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.nfc.Tag;
@@ -33,6 +34,10 @@ public class MainActivity extends AppCompatActivity {
     Ringtone r;
     boolean isStopped;
 
+    //  Booleans
+    protected boolean switched_to_ring_act;
+    protected boolean switched_to_main_act;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
 
         CreateTimePickerDialog();
         AlarmTimer();
-
     }
 
     //  Creates the time picker dialog
@@ -92,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
                 if(ReturnCurrentTime().equals(AlarmTime()) && !isStopped)
                 {
                     r.play();
+                    SwitchToRingActivity();
                 }
                 else
                 {
@@ -120,4 +125,15 @@ public class MainActivity extends AppCompatActivity {
         r.stop();
         isStopped = true;
     }
+
+    public void SwitchToRingActivity()
+    {
+        if(!switched_to_ring_act)
+        {
+            Intent intent = new Intent(MainActivity.this,RingActivity.class);
+            startActivity(intent);
+            switched_to_ring_act = true;
+        }
+    }
+
 }
