@@ -47,6 +47,7 @@
         android:id="@+id/gesture_button"
         android:layout_width="175dp"
         android:layout_height="61dp"
+        android:onClick="CameraButton"
         android:text="Camera"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
