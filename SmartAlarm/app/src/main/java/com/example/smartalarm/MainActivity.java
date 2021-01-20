@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -32,11 +33,14 @@ public class MainActivity extends AppCompatActivity {
     TimePickerDialog timePickerDialog;
     Button stop_alarm_button;
     Ringtone r;
-    boolean isStopped;
-
+    MyRingToneHelper ringToneHelper;
+    MyBitmapKeeper bitmapKeeper;
     //  Booleans
+    boolean isPoseSelected;
     protected boolean switched_to_ring_act;
     protected boolean switched_to_main_act;
+
+    public MyPoseKeeper poseKeeper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +49,33 @@ public class MainActivity extends AppCompatActivity {
 
         //  Ringtone
         r = RingtoneManager.getRingtone(getApplicationContext(),RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+        ringToneHelper = new MyRingToneHelper(r);
 
         CreateTimePickerDialog();
         AlarmTimer();
+
+        if(MyPoseKeeper.instance == null)
+        {
+            poseKeeper = new MyPoseKeeper();
+        }
+        else
+        {
+            poseKeeper = MyPoseKeeper.instance;
+        }
+
+        if(MyBitmapKeeper.instance == null)
+        {
+            bitmapKeeper = new MyBitmapKeeper();
+        }
+        else
+        {
+            bitmapKeeper = MyBitmapKeeper.instance;
+        }
+
+        //  SET BOOLEANS
+
+
+
     }
 
     //  Creates the time picker dialog
@@ -59,30 +87,38 @@ public class MainActivity extends AppCompatActivity {
         tvTimer1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Initialize time picker dialog
-                timePickerDialog = new TimePickerDialog(
-                        MainActivity.this,
-                        2,
-                        new TimePickerDialog.OnTimeSetListener() {
-                            @Override
-                            public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                //Initialize hour and minute
-                                t1Hour = hourOfDay;
-                                t1Minute= minute;
-                                //Initialize calendar
-                                Calendar calendar = Calendar.getInstance();
-                                //Set hour and minute
-                                calendar.set(0,0,0,t1Hour,t1Minute);
-                                //Set selected time on text view
-                                tvTimer1.setText(DateFormat.format("hh:mm aa",calendar));
-                            }
-                        },12,0,false
-                );
-                //Displayed previous selected time
-                timePickerDialog.updateTime(t1Hour,t1Minute);
-                //Show dialog
-                timePickerDialog.show();
+                if(poseKeeper.isPoseSelected)
+                {
+                    //Initialize time picker dialog
+                    timePickerDialog = new TimePickerDialog(
+                            MainActivity.this,
+                            2,
+                            new TimePickerDialog.OnTimeSetListener() {
+                                @Override
+                                public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                                    //Initialize hour and minute
+                                    t1Hour = hourOfDay;
+                                    t1Minute= minute;
+                                    //Initialize calendar
+                                    Calendar calendar = Calendar.getInstance();
+                                    //Set hour and minute
+                                    calendar.set(0,0,0,t1Hour,t1Minute);
+                                    //Set selected time on text view
+                                    tvTimer1.setText(DateFormat.format("hh:mm aa",calendar));
+                                }
+                            },12,0,false
+                    );
+                    //Displayed previous selected time
+                    timePickerDialog.updateTime(t1Hour,t1Minute);
+                    //Show dialog
+                    timePickerDialog.show();
+                }
+                else
+                {
+                    Toast.makeText(MainActivity.this, "SELECT A POSE FIRST", Toast.LENGTH_SHORT).show();
+                }
             }
+
         });
     }
 
@@ -93,18 +129,23 @@ public class MainActivity extends AppCompatActivity {
         t.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if(ReturnCurrentTime().equals(AlarmTime()) && !isStopped)
+                if(ReturnCurrentTime().equals(AlarmTime()) ||ringToneHelper.canPlay)
                 {
-                    r.play();
+                    if(!ringToneHelper.isDeactivated)
+                    {
+                        ringToneHelper.canPlay = true;
+                    }
+                    ringToneHelper.MyRingtonePlay();
                     SwitchToRingActivity();
                 }
                 else
                 {
-                    r.stop();
+                    ringToneHelper.MyRingtoneStop();
                 }
             }
         },0,1000);  //  Will check it every second
     }
+
 
     //  Returns the alarm time
     public String AlarmTime()
@@ -120,10 +161,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //  OnClickListener for out button
-    public void StopButton(View view)
+    public void ListButton(View view)
     {
+        /*
         r.stop();
         isStopped = true;
+         */
+        Intent intent = new Intent(MainActivity.this,ListActivity.class);
+        startActivity(intent);
     }
 
     public void SwitchToRingActivity()
@@ -134,6 +179,12 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             switched_to_ring_act = true;
         }
+    }
+
+    public void SwitchToListActivity()
+    {
+        Intent intent = new Intent(MainActivity.this,ListActivity.class);
+        startActivity(intent);
     }
 
 }

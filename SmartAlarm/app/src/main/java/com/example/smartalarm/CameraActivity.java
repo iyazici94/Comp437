@@ -4,10 +4,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
-import android.graphics.PointF;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -23,54 +24,47 @@ import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 import com.google.mlkit.vision.face.FaceLandmark;
-import java.io.File;
-import java.io.FileOutputStream;
+
 import java.util.List;
 
 public class CameraActivity extends AppCompatActivity {
 
-    private CameraKitView cameraView;
+    private CameraKitView cameraKitView;
     private Button faceDetectButton;
+    FaceDetector detector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        cameraKitView = findViewById(R.id.camera_view);
         faceDetectButton = findViewById(R.id.detect_gesture_btn);
-        cameraView = findViewById(R.id.camera_view);
 
         FirebaseApp.initializeApp(this);
 
-    }
-
-
-    public void MyCameraListener(View view)
-    {
-        View.OnClickListener photoOnClickListener = new View.OnClickListener() {
+        faceDetectButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                cameraView.captureImage(new CameraKitView.ImageCallback() {
+                cameraKitView.captureImage(new CameraKitView.ImageCallback(){
                     @Override
-                    public void onImage(CameraKitView cameraKitView, byte[] capturedImage) {
-                        File savedPhoto = new File(Environment.getExternalStorageDirectory(),"photo.jpg");
-                        try {
-                            FileOutputStream outputStream = new FileOutputStream(savedPhoto.getPath());
-                            outputStream.write(capturedImage);
-                            outputStream.close();
-                            InputImage image = imageFromArray(capturedImage,0);
-                            ProcessFaceDetection(image);
-                        }
-                        catch (java.io.IOException e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
+                    public void onImage(CameraKitView cameraKitView,final byte[] bytes) {
+                        InputImage image;
 
+                        Bitmap itmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        Bitmap bitmap = Bitmap.createScaledBitmap(itmap, 480, 360, false);
+                        image = InputImage.fromBitmap(bitmap,270);
+
+                        MyBitmapKeeper.instance.bitmap = bitmap;
+                        ProcessFaceDetection(image);
+                    }
                 });
             }
-        };
+        });
+
     }
+
+
 
     public void ProcessFaceDetection(InputImage image)
     {
@@ -86,7 +80,7 @@ public class CameraActivity extends AppCompatActivity {
         // [END set_detector_options]
 
         // [START get_detector]
-        FaceDetector detector = FaceDetection.getClient(options);
+        detector = FaceDetection.getClient(options);
 
         // [START run_detector]
         Task<List<Face>> result =
@@ -95,43 +89,39 @@ public class CameraActivity extends AppCompatActivity {
                                 new OnSuccessListener<List<Face>>() {
                                     @Override
                                     public void onSuccess(List<Face> faces) {
+                                        Log.i("SUCCESSSMILE","succesfully detected");
                                         // Task completed successfully
                                         // [START_EXCLUDE]
                                         // [START get_face_info]
+                                        //Log.i("MySmileProb",faces.get(0).getSmilingProbability().toString());
                                         for (Face face : faces) {
                                             Rect bounds = face.getBoundingBox();
                                             float rotY = face.getHeadEulerAngleY();  // Head is rotated to the right rotY degrees
                                             float rotZ = face.getHeadEulerAngleZ();  // Head is tilted sideways rotZ degrees
 
-
-                                            if(faces.isEmpty())
-                                            {
-                                                int duration = Toast.LENGTH_SHORT;
-
-                                                Toast toast = Toast.makeText(getApplicationContext(),"No face detected",duration);
-                                                toast.show();
-                                            }
                                             // If landmark detection was enabled (mouth, ears, eyes, cheeks, and
                                             // nose available):
-                                            FaceLandmark leftEar = face.getLandmark(FaceLandmark.LEFT_EAR);
-                                            if (leftEar != null) {
-                                                PointF leftEarPos = leftEar.getPosition();
-                                            }
+
 
                                             // If classification was enabled:
                                             if (face.getSmilingProbability() != null) {
                                                 float smileProb = face.getSmilingProbability();
+                                                String tmp = Float.toString(smileProb);
+                                                Log.i("MYSMILEPROB",tmp);
                                                 //  THIS CODE MIGHT CAUSES ERRORS, TEST THIS!!!!
-                                                if(smileProb >= 0.5)
-                                                    SwitchToMainActivity();
+                                                if(smileProb >= 0.3)
+                                                {
+                                                    Toast.makeText(CameraActivity.this, "GOOD MORNING!!", Toast.LENGTH_SHORT).show();
+                                                    SwitchToMorningActivity();
+                                                }
+                                                else
+                                                {
+                                                    Toast.makeText(CameraActivity.this, "SMILE WIDER :)", Toast.LENGTH_SHORT).show();
+                                                }
                                             }
-                                            if (face.getRightEyeOpenProbability() != null) {
-                                                float rightEyeOpenProb = face.getRightEyeOpenProbability();
-                                            }
-
-                                            // If face tracking was enabled:
-                                            if (face.getTrackingId() != null) {
-                                                int id = face.getTrackingId();
+                                            else
+                                            {
+                                                Toast.makeText(CameraActivity.this, "NO FACE DETECTED!!", Toast.LENGTH_SHORT).show();
                                             }
                                         }
                                         // [END get_face_info]
@@ -144,50 +134,48 @@ public class CameraActivity extends AppCompatActivity {
                                     public void onFailure(@NonNull Exception e) {
                                         // Task failed with an exception
                                         // ...
+
                                     }
                                 });
     }
 
 
-    public void SwitchToMainActivity()
+    public void SwitchToMorningActivity()
     {
-        Intent intent = new Intent(CameraActivity.this,MainActivity.class);
+        Intent intent = new Intent(CameraActivity.this,MorningActivity.class);
+        MyRingToneHelper.instance.canPlay = false;
+        MyRingToneHelper.instance.isDeactivated = true;
         startActivity(intent);
     }
-    private InputImage imageFromArray(byte[] byteArray, int rotation) {
-        // [START image_from_array]
-        InputImage image = InputImage.fromByteArray(
-                byteArray,
-                /* image width */480,
-                /* image height */360,
-                rotation,
-                InputImage.IMAGE_FORMAT_NV21 // or IMAGE_FORMAT_YV12
-        );
-        // [END image_from_array]
-        return image;
-    }
+
 
     @Override
     protected void onStart() {
         super.onStart();
-        cameraView.onStart();
+        cameraKitView.onStart();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        cameraView.onPause();
+        cameraKitView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        cameraView.onResume();
+        cameraKitView.onResume();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        cameraView.onStop();
+        cameraKitView.onStop();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        cameraKitView.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }
